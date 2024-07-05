@@ -37,21 +37,18 @@ To run this program, you would first want to launch the repo in gitpod by clonin
 npm install
 ```
 2. Open two additional terminals in your VS Code.
-3. In the second terminal, type:
+3. In the second terminal, type: (This will initiate the start to a local Ethereum blockchain.)
 ```javascript
 npx hardhat node
 ```
-This will initiate the start to a local Ethereum blockchain.
-4. In the third terminal, type: 
+4. In the third terminal, type: (This is to deploy the smart contract to the local blockchain.)
 ```javascript
 npx hardhat run --network localhost scripts/deploy.js 
 ```
-This is to deploy the smart contract to the local blockchain.
-5. Return to the first terminal and type: 
+5. Return to the first terminal and type: (This is so that you can launch the front-end application.) 
 ```javascript
 npm run dev
 ```
-This is so that you can launch the front-end application.
 
 ## Authors
 
