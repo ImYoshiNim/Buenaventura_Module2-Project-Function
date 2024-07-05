@@ -49,6 +49,7 @@ npx hardhat run --network localhost scripts/deploy.js
 ```javascript
 npm run dev
 ```
+Under the "Ports" you will have access to the 3000 local that will be the host for the frontend of the actual program itself. After such you can configure your MetaMask wallet to the given accounts under the second terminal using the private key given to you, in the process you may also need to configure the network setting in your metamask. You may simply add a network using the 8545 Port address, this will allow your wallet to have the currency (10000 ETH) that is needed to be utilized for testing.
 
 ## Authors
 
