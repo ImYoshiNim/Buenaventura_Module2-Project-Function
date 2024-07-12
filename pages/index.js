@@ -1,18 +1,17 @@
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
-import atm_abi from "../artifacts/contracts/Assessment.sol/Assessment.json";
+import atm_abi from "/workspace/SCM-Starter/artifacts/contracts/Assessment.sol/CarparkTicket.json";
 
 export default function HomePage() {
   const [ethWallet, setEthWallet] = useState(undefined);
   const [account, setAccount] = useState(undefined);
   const [atm, setATM] = useState(undefined);
   const [balance, setBalance] = useState(undefined);
-  const [history, setHistory] = useState([]);
-  const [filter, setFilter] = useState("All");
-  const [characterMessage, setCharacterMessage] = useState("");
-  const [amount, setAmount] = useState(1);
+  const [ticketId, setTicketId] = useState(undefined);
+  const [duration, setDuration] = useState(0);
+  const [amount, setAmount] = useState(0);
 
-  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+  const contractAddress = "0x3Aa5ebB10DC797CAC828524e59A333d0A371443c"; // Update with your deployed contract address
   const atmABI = atm_abi.abi;
 
   const getWallet = async () => {
@@ -21,15 +20,15 @@ export default function HomePage() {
     }
 
     if (ethWallet) {
-      const account = await ethWallet.request({ method: "eth_accounts" });
-      handleAccount(account);
+      const accounts = await ethWallet.request({ method: "eth_accounts" });
+      handleAccount(accounts);
     }
   };
 
   const handleAccount = (account) => {
-    if (account) {
+    if (account.length > 0) {
       console.log("Account connected: ", account);
-      setAccount(account);
+      setAccount(account[0]);
     } else {
       console.log("No account found");
     }
@@ -43,7 +42,6 @@ export default function HomePage() {
 
     const accounts = await ethWallet.request({ method: "eth_requestAccounts" });
     handleAccount(accounts);
-
     getATMContract();
   };
 
@@ -51,109 +49,72 @@ export default function HomePage() {
     const provider = new ethers.providers.Web3Provider(ethWallet);
     const signer = provider.getSigner();
     const atmContract = new ethers.Contract(contractAddress, atmABI, signer);
-
     setATM(atmContract);
   };
 
   const getBalance = async () => {
     if (atm) {
-      const balance = (await atm.getBalance()).toNumber();
-      setBalance(balance);
-      return balance;
+      const weiBalance = await atm.getBalance();
+      setBalance(ethers.utils.formatEther(weiBalance)); // Convert wei to ETH
     }
   };
 
-  const deposit = async () => {
+  const purchaseTicket = async () => {
     if (atm) {
-      const note = window.prompt("Enter a note for deposit (optional):");
-      let tx = await atm.deposit(amount, { value: ethers.utils.parseEther(amount.toString()) });
-      await tx.wait();
-      const newBalance = await getBalance();
-      alert(`Deposit successful! New Balance: ${newBalance}`);
-      addHistory("Deposit", amount, note || "");
-      setCharacterMessage("(ﾉ◕ヮ◕)ﾉ* - Thank you for the money");
-    }
-  };
-
-  const withdraw = async () => {
-    if (atm) {
-      const note = window.prompt("Enter a note for withdrawal (optional):");
       try {
-        let tx = await atm.withdraw(amount);
+        let tx = await atm.purchaseTicket(duration, { value: amount, gasLimit: 100000 });
         await tx.wait();
-        const newBalance = await getBalance();
-        alert(`Withdrawal successful! New Balance: ${newBalance}`);
-        addHistory("Withdraw", amount, note || "");
-        setCharacterMessage("ಠ_ಠ - Why did you take the money");
+        getBalance();
+        setTicketId(await atm.generateTicketId()); // Set ticket ID to state
       } catch (error) {
-        console.error("Withdrawal error:", error.message);
-        alert("There is not Enough Balance in Your Wallet");
+        console.error("Transaction error:", error);
       }
     }
   };
 
-  const addHistory = (action, amount, note = "") => {
-    const timestamp = new Date().toLocaleString();
-    setHistory([...history, { action, amount, note, timestamp }]);
-  };
-
-  const handleFilterChange = (selectedFilter) => {
-    setFilter(selectedFilter);
+  const handleDurationChange = (e) => {
+    setDuration(Number(e.target.value));
+    const amounts = [10, 20, 30, 40, 50];
+    setAmount(ethers.utils.parseEther(amounts[Number(e.target.value)].toString())); // Convert to wei
   };
 
   const initUser = () => {
     if (!ethWallet) {
-      return <p>Please install Metamask in order to use this ATM.</p>;
+      return <p>Please install Metamask to use this service.</p>;
     }
 
     if (!account) {
-      return <button onClick={connectAccount}>Please connect your Metamask wallet</button>;
+      return <button onClick={connectAccount}>Please connect your MetaMask wallet</button>;
     }
 
-    if (balance == undefined) {
+    if (balance === undefined) {
       getBalance();
     }
 
     return (
       <div>
-        <p className="highlighted">Your Account: {account} </p>
-        <p className="highlighted">Your Balance: {balance}</p>
-        <div className="slider-container">
-          <input
-            type="range"
-            min="1"
-            max="100"
-            value={amount}
-            onChange={(e) => setAmount(Number(e.target.value))}
-          />
-          <span>{amount} ETH</span>
+        <p>Carpak System Number: {account}</p>
+        <p>System Balance: {balance} ETH</p>
+        <h3>Select Parking Duration:</h3>
+        <div onChange={handleDurationChange} className="radio-buttons">
+          <label>
+            <input type="radio" value={0} name="duration" /> 30 minutes (10 ETH)
+          </label>
+          <label>
+            <input type="radio" value={1} name="duration" /> 1 Hour (20 ETH)
+          </label>
+          <label>
+            <input type="radio" value={2} name="duration" /> 3 Hours (30 ETH)
+          </label>
+          <label>
+            <input type="radio" value={3} name="duration" /> 5 Hours (40 ETH)
+          </label>
+          <label>
+            <input type="radio" value={4} name="duration" /> 24 Hours (50 ETH)
+          </label>
         </div>
-        <button className="deposit-button" onClick={deposit}>Deposit {amount} ETH</button>
-        <button className="withdraw-button" onClick={withdraw}>Withdraw {amount} ETH</button>
-        {characterMessage && <p className="character-message">{characterMessage}</p>}
-        <h2>Transaction History</h2>
-        <div className="filter-buttons">
-          <button onClick={() => handleFilterChange("All")}>All</button>
-          <button onClick={() => handleFilterChange("Deposit")}>Deposits</button>
-          <button onClick={() => handleFilterChange("Withdraw")}>Withdrawals</button>
-        </div>
-        <ul>
-          {history.map((item, index) => {
-            if (filter === "All" || item.action === filter) {
-              return (
-                <li
-                  key={index}
-                  className={item.action === "Deposit" ? "deposit-item" : "withdraw-item"}
-                >
-                  {item.timestamp} - {item.action} {item.amount} ETH -
-                  {item.note && <span> Note: {item.note}</span>}
-                </li>
-              );
-            } else {
-              return null;
-            }
-          })}
-        </ul>
+        <button onClick={purchaseTicket}>Book Ticket</button>
+        <p>Your Ticket ID: {ticketId}</p>
       </div>
     );
   };
@@ -164,175 +125,126 @@ export default function HomePage() {
 
   return (
     <main className="container">
-      <header><h1>Welcome to the AdamWal_Lee_t</h1></header>
+      <header><h1>Welcome to the Carpark Ticket System!</h1></header>
       {initUser()}
-      <style jsx global>{`
-        body, html {
-          margin: 0;
-          padding: 0;
-          height: 100%;
-          background-color: #f3e5f5;
-          color: #4a148c;
+      <style jsx>{`
+               body {
+          background-color: #e9f5ff;
           font-family: 'Arial', sans-serif;
+          text-align: center;
+          padding: 20px;
         }
-        button {
-          background-color: #7b1fa2;
-          color: white;
-          font-size: 18px;
-          margin: 10px 0;
-          padding: 10px 20px;
-          border: none;
-          border-radius: 5px;
-          cursor: pointer;
-        }
-        button:hover {
-          background-color: #6a1b9a;
-        }
-        .deposit-button {
-          background-color: #4caf50;
-        }
-        .withdraw-button {
-          background-color: #f44336;
-        }
-        .deposit-button:hover,
-        .withdraw-button:hover {
-          background-color: #388e3c, #d32f2f;
-        }
-        .container {
+
+        main {
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
           min-height: 100vh;
         }
+
         header {
-          background: linear-gradient(to right, #8e24aa, #5f27cd);
-          padding: 20px;
-          width: 100%;
-          text-align: center;
+          background-color: #007BFF;
           color: white;
-          font-family: 'Roboto', sans-serif;
+          padding: 10px;
+          border-radius: 8px;
+          margin-bottom: 20px;
+          width: 100%;
+          max-width: 600px;
         }
+
         h1 {
-          font-size: 36px;
+          font-size: 24px;
           margin: 0;
         }
-        .highlighted {
-          background-color: rgba(255, 255, 0, 0.1);
-          padding: 10px;
-          border-radius: 15px;
-          text-align: center;
+
+        button {
+          background-color: #007BFF;
+          color: white;
+          border: none;
+          padding: 12px 24px;
+          border-radius: 5px;
+          cursor: pointer;
+          transition: background-color 0.3s, transform 0.2s;
+          font-size: 16px;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+          width: 100%;
+          max-width: 200px;
+          margin: 10px auto; /* Center the button */
         }
-        .content {
-          display: flex;
-          width: 80%;
-          justify-content: space-between;
+
+        button:hover {
+          background-color: #0056b3;
+          transform: scale(1.05);
         }
-        .account-info {
-          flex: 1;
-          text-align: left;
-          margin-right: 20px;
+
+        button:active {
+          transform: scale(0.95);
         }
-        .transaction-history {
-          flex: 1;
-          text-align: right;
-          margin-left: 20px;
-        }
+
         p {
+          color: #333;
           font-size: 18px;
           margin: 10px 0;
-        }
-        ul {
-          list-style-type: none;
-          padding: 0;
-        }
-        li {
-          background-color: #e1bee7;
-          margin: 5px 0;
-          padding: 10px;
+          padding: 8px;
+          background-color: #f0f4ff;
           border-radius: 5px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          transition: background-color 0.3s;
+          width: 100%;
+          max-width: 600px;
         }
-        .deposit-item {
-          background-color: #90ee90;
-          color: black;
-          padding: 10px;
-          border-radius: 5px;
-          margin-bottom: 5px;
+
+        p:hover {
+          background-color: #e3eaf5;
         }
-        .withdraw-item {
-          background-color: #ffcccb;
-          color: black;
-          padding: 10px;
-          border-radius: 5px;
-          margin-bottom: 5px;
+
+        .radio-buttons {
+          margin: 20px 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
         }
-        .character-message {
-          font-size: 20px;
-          color: #9c27b0;
-          margin-top: 20px;
-          background-color: rgba(255, 255, 0, 0.1);
-          padding: 10px;
-          border-radius: 15px;
-          text-align: right;
-        }
-        .slider-container {
+
+        .radio-buttons label {
           display: flex;
           align-items: center;
-          justify-content: center;
-          margin: 20px 0;
-          padding: 10px;
-          border: 2px solid #b39ddb; 
-          border-radius: 8px;
-          background-color: #e1bee7;
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .slider-container input {
-          margin-right: 10px;
-          width: 100%;
-          max-width: 300px;
-          -webkit-appearance: none;
-          appearance: none;
-          background: #ce93d8;
-          height: 8px;
+          background-color: #e9f5ff;
+          border: 2px solid #007BFF;
           border-radius: 5px;
-          outline: none;
-          transition: background 0.3s ease;
+          padding: 10px;
+          width: 80%;
+          cursor: pointer;
+          transition: background-color 0.3s, border-color 0.3s;
+          text-align: center;
         }
 
-        .slider-container input::-webkit-slider-thumb {
-          -webkit-appearance: none;
-          appearance: none;
+        .radio-buttons input {
+          display: none;
+        }
+
+        .radio-buttons input + label:before {
+          content: '';
+          display: inline-block;
           width: 20px;
           height: 20px;
+          border: 2px solid #007BFF;
           border-radius: 50%;
-          background: #7e57c2;
-          cursor: pointer;
-          transition: background 0.3s ease;
+          background-color: white;
+          margin-right: 10px;
+          transition: background-color 0.3s;
         }
 
-        .slider-container input::-moz-range-thumb {
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          background: #7e57c2;
-          cursor: pointer;
-          transition: background 0.3s ease;
+        .radio-buttons input:checked + label:before {
+          background-color: #007BFF;
+          border: 2px solid #0056b3;
         }
 
-        .slider-container input:hover {
-          background: #ba68c8;
+        .radio-buttons label:hover {
+          background-color: #cce5ff;
+          border-color: #0056b3;
         }
-
-        .slider-container input::-webkit-slider-thumb:hover {
-          background: #673ab7;
-        }
-
-        .slider-container input::-moz-range-thumb:hover {
-          background: #673ab7;
-        }
-
-
       `}</style>
     </main>
   );
