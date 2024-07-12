@@ -1,55 +1,55 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
-contract Assessment {
+contract CarparkTicket {
     address payable public owner;
     uint256 public balance;
 
-    event Deposit(uint256 amount);
-    event Withdraw(uint256 amount);
+    event TicketPurchased(string ticketId, uint256 amount, uint256 duration);
 
-    constructor(uint initBalance) payable {
+    constructor() {
         owner = payable(msg.sender);
-        balance = initBalance;
     }
 
-    function getBalance() public view returns(uint256){
+    function getBalance() public view returns (uint256) {
         return balance;
     }
 
-    function deposit(uint256 _amount) public payable {
-        uint _previousBalance = balance;
-
-        // make sure this is the owner
-        require(msg.sender == owner, "You are not the owner of this account");
-
-        // perform transaction
-        balance += _amount;
-
-        // assert transaction completed successfully
-        assert(balance == _previousBalance + _amount);
-
-        // emit the event
-        emit Deposit(_amount);
+    function deposit() internal {
+        balance += msg.value;
     }
 
-    // custom error
-    error InsufficientBalance(uint256 availableBalance, uint256 requestedAmount);
+    function purchaseTicket(uint8 duration) public payable {
+        uint256 amount;
 
-    function withdraw(uint256 _withdrawAmount) public {
-        require(msg.sender == owner, "You are not the owner of this account");
-
-        if (balance < _withdrawAmount) {
-            revert InsufficientBalance({
-                availableBalance: balance,
-                requestedAmount: _withdrawAmount
-            });
+        if (duration == 0) {
+            amount = 10 ether; // 30 minutes
+        } else if (duration == 1) {
+            amount = 20 ether; // 1 hour
+        } else if (duration == 2) {
+            amount = 30 ether; // 3 hours
+        } else if (duration == 3) {
+            amount = 40 ether; // 5 hours
+        } else if (duration == 4) {
+            amount = 50 ether; // 24 hours
+        } else {
+            revert("Invalid duration");
         }
 
-        // withdraw the given amount
-        balance -= _withdrawAmount;
+        require(msg.value == amount, "Incorrect ETH sent");
+        deposit();
 
-        // emit the event
-        emit Withdraw(_withdrawAmount);
+        string memory ticketId = generateTicketId();
+        emit TicketPurchased(ticketId, amount, duration);
     }
+
+
+    function generateTicketId() public view returns (string memory) {
+        bytes1 letter1 = bytes1(uint8(65 + uint256(keccak256(abi.encodePacked(block.timestamp, msg.sender, 1))) % 26)); // A-Z
+        bytes1 letter2 = bytes1(uint8(65 + uint256(keccak256(abi.encodePacked(block.timestamp, msg.sender, 2))) % 26)); // A-Z
+        bytes1 letter3 = bytes1(uint8(65 + uint256(keccak256(abi.encodePacked(block.timestamp, msg.sender, 3))) % 26)); // A-Z
+
+        return string(abi.encodePacked(letter1, letter2, letter3));
+    }
+
 }
