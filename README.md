@@ -1,33 +1,24 @@
 # Function Frontend
 
-The program is an ATM application built on Ethereum that aims to give customers an easy-to-use, interactive way to manage their bitcoin holdings in a decentralized manner. Users may safely deposit and withdraw Ether (ETH) while taking use of a dynamic React-built user interface by utilizing MetaMask for wallet connection and smart contracts implemented on the Ethereum network. Real-time balance updates, transaction history tracking with optional comments, and slider input for easy transaction amount specification are just a few of the features that the program offers. This novel approach to decentralized financial transactions is made possible by the system's strong error management, which guarantees dependable and efficient operations.
-
+The Carpark Ticket system is a decentralized application that allows users to purchase parking tickets on the Ethereum blockchain using a smart contract. This contract, implemented in Solidity, manages parking fees and user interactions, with the owner maintaining control over the contract. Users can select various parking durations, which determine the ETH amount required for the ticket purchase—ranging from 10 ETH for 30 minutes to 50 ETH for 24 hours. Upon purchasing a ticket, the contract verifies the payment amount and updates the balance accordingly, emitting a TicketPurchased event that includes a unique ticket ID, the amount paid, and the selected duration. The unique ticket ID is generated through a secure hashing mechanism, ensuring each ticket is distinct. The system provides a transparent and efficient way for users to manage parking, leveraging blockchain technology for secure transactions and ownership verification.
 
 ## Functions
 
-Deposit Function: 
+getBalance():
 
-- This function allows the user to add a specified amount of Ether (ETH) to their balance in the smart contract. The amount is determined by a slider input, and the transaction is confirmed with a success message.
+Returns the current balance of the contract, representing the total amount of ETH deposited through ticket purchases.
 
-Withdraw Function: 
+deposit():
 
-- This function enables the user to withdraw a specified amount of Ether (ETH) from their balance in the smart contract. If the withdrawal amount exceeds the available balance, an error message is displayed to notify the user.
+An internal function that adds the received ETH (msg.value) to the contract's balance, effectively updating the total balance after a ticket purchase.
 
-History Function: 
+purchaseTicket(uint8 duration):
 
-- This function tracks and displays the user's transaction history, including deposits and withdrawals, along with timestamps and optional notes for each transaction.
+Allows users to purchase a parking ticket for a specified duration. It checks the duration, sets the corresponding ETH amount required, validates the sent amount, calls the deposit() function, generates a unique ticket ID, and emits a TicketPurchased event with the ticket details.
 
-Notes Function: 
+generateTicketId():
 
-- This function allows users to add optional notes to their deposit and withdrawal transactions, providing additional context or details for each transaction recorded in the history.
-
-Slider Function: 
-
-- This function provides a user-friendly interface for specifying the amount of Ether (ETH) to be deposited or withdrawn. The slider allows users to easily adjust the amount before initiating a transaction.
-
-Character Function: 
-
-- This function adds a fun and interactive element to the user interface by displaying character messages based on the user's actions, such as depositing or withdrawing funds, enhancing the overall user experience.
+Generates a unique three-letter ticket ID using a hash of the current timestamp and the sender's address. Each letter is randomly chosen from the English alphabet (A-Z) to ensure uniqueness for every ticket issued.
 
 ### Executing program
 To run this program, you would first want to launch the repo in gitpod by cloning the repository
